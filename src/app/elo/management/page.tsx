@@ -88,11 +88,7 @@ export default function ManagementPage() {
   const projectIntroModal = useModal();
 
   // 추천 매치글 데이터 가져오기 (5개, 전체 스포츠 카테고리)
-  const {
-    data: recommendedPostsData,
-    isLoading,
-    error,
-  } = useRecommendedMatchPostsApi(5, 0);
+  const { data: recommends, isLoading } = useRecommendedMatchPostsApi(5, 0);
 
   const handleChallenge = (matchId: number) => {
     router.push(`/community/post/${matchId}?type=match`);
@@ -117,25 +113,13 @@ export default function ManagementPage() {
 
         <SectionTitle>추천매치</SectionTitle>
 
-        {isLoading && (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            추천 매치글을 불러오는 중...
-          </div>
-        )}
-
-        {error && (
-          <div style={{ textAlign: 'center', padding: '20px', color: 'red' }}>
-            추천 매치글을 불러오는데 실패했습니다.
-          </div>
-        )}
-
-        {recommendedPostsData?.data?.map((post: MatchPostItem) => (
+        {recommends?.data?.map((post: MatchPostItem) => (
           <div key={post.id}>
             <MatchCard post={post} onClick={handleChallenge} />
           </div>
         ))}
 
-        {!isLoading && recommendedPostsData?.data?.length === 0 && (
+        {!isLoading && recommends?.data?.length === 0 && (
           <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
             추천할 매치글이 없습니다.
           </div>

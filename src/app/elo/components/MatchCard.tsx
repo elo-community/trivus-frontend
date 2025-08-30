@@ -24,6 +24,7 @@ const MatchCardContainer = styled.div`
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: ${props => props.theme.spacing.md};
+  height: 110px;
 
   &:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
@@ -32,8 +33,7 @@ const MatchCardContainer = styled.div`
 `;
 
 const ImageSection = styled.div`
-  width: 100px;
-  height: 100px;
+  min-width: 110px;
   position: relative;
   background-color: ${props => props.theme.colors.backgroundGray};
 `;
@@ -56,6 +56,7 @@ const ContentSection = styled.div`
   justify-content: space-between;
   box-sizing: border-box;
   padding: 8px;
+  gap: 2px;
 `;
 
 const TopRow = styled.div`
@@ -123,7 +124,8 @@ export default function MatchCard({ post, onClick }: MatchCardProps) {
         <Image
           src={getCategoryImg(post.sportCategory.name)}
           alt="ad"
-          width={100}
+          width={110}
+          height={110}
         />
         <ImagePlaceholder>테니스장</ImagePlaceholder>
       </ImageSection>
@@ -139,7 +141,7 @@ export default function MatchCard({ post, onClick }: MatchCardProps) {
           </div>
         </TopRow>
 
-        <VenueName style={{ marginTop: '-12px' }}>{post.title}</VenueName>
+        <VenueName style={{ marginTop: '-8px' }}>{post.title}</VenueName>
 
         <DateTimeInfo>
           {post.createdAt

@@ -3,16 +3,18 @@
 import styled from 'styled-components';
 import { useRouter } from 'next/navigation';
 import { useModal } from '@/hooks/useModal';
-import TokenHistoryModal from '@/components/views/TokenHistoryModal';
 import { ROUTES } from '@/constants/routes';
 import Image from 'next/image';
 import { ICONS } from '@/assets';
+import TokenHistoryModal from '../modals/TokenHistoryModal';
+import LoadingDots from './LoadingDots';
 
 interface TokenDisplayProps {
   tokens: number;
   harvestableTokens?: number;
   onHarvestAll?: () => void;
   harvestButtonText?: string;
+  isHarvesting?: boolean;
 }
 
 const TokenContainer = styled.div`
@@ -69,24 +71,32 @@ const HarvestInfo = styled.div`
   gap: 2px;
 `;
 
-const HarvestButton = styled.button<{ disabled: boolean }>`
+const HarvestButton = styled.button<{
+  disabled: boolean;
+  $isLoading?: boolean;
+}>`
   background: rgba(255, 255, 255, 0.18);
   border-radius: 8px;
   padding: 4px 10px;
   color: ${props => props.theme.colors.textBlack};
   font-size: ${props => props.theme.typography.fontSizes.xs};
   font-weight: ${props => props.theme.typography.fontWeights.medium};
-  cursor: ${props => (props.disabled ? 'not-allowed' : 'pointer')};
+  cursor: ${props =>
+    props.disabled || props.$isLoading ? 'not-allowed' : 'pointer'};
   transition: all 0.2s;
   white-space: nowrap;
   border: 1px solid ${props => props.theme.colors.border};
+  opacity: ${props => (props.$isLoading ? 0.7 : 1)};
 
   &:hover {
-    background: rgba(255, 255, 255, 0.28);
+    background: ${props =>
+      props.$isLoading
+        ? 'rgba(255, 255, 255, 0.18)'
+        : 'rgba(255, 255, 255, 0.28)'};
   }
 
   &:active {
-    transform: translateY(1px);
+    transform: ${props => (props.$isLoading ? 'none' : 'translateY(1px)')};
   }
 
   &:disabled {
@@ -136,6 +146,7 @@ export default function TokenDisplay({
   harvestableTokens = 0,
   onHarvestAll,
   harvestButtonText = '수확하기',
+  isHarvesting = false,
 }: TokenDisplayProps) {
   const router = useRouter();
   const tokenHistoryModal = useModal();
@@ -174,9 +185,14 @@ export default function TokenDisplay({
         <HarvestButtonGroup>
           <HarvestButton
             onClick={onHarvestAll}
-            disabled={harvestableTokens === 0}
+            disabled={harvestableTokens === 0 || isHarvesting}
+            $isLoading={isHarvesting}
           >
-            {harvestButtonText}
+            {isHarvesting ? (
+              <LoadingDots isLoading={isHarvesting} />
+            ) : (
+              harvestButtonText
+            )}
           </HarvestButton>
           <HistoryButton onClick={handleViewHistory}>
             <Image src={ICONS.HISTORY} alt="history" />

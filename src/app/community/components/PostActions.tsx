@@ -12,7 +12,7 @@ import { DEFAULT_NETWORK } from '@/constants/networks';
 import { useAuthStore } from '@/stores/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUserTokensApi } from '@/api/useUser';
-import FullPageLoading from '@/components/layout/FullPageLoading';
+import LoadingDots from '@/components/views/LoadingDots';
 
 const PostActionsContainer = styled.div`
   margin: ${props => props.theme.spacing.md} 0;
@@ -29,6 +29,7 @@ const ActionButtons = styled.div`
 const ActionButton = styled.button<{
   $isActive: boolean;
   $variant: 'like' | 'dislike';
+  $isLoading?: boolean;
 }>`
   display: flex;
   align-items: center;
@@ -44,13 +45,17 @@ const ActionButton = styled.button<{
     props.$isActive
       ? props.theme.colors.textBlack
       : props.theme.colors.textBlack};
-  cursor: pointer;
+  cursor: ${props => (props.$isLoading ? 'not-allowed' : 'pointer')};
   transition: all 0.2s;
   font-size: ${props => props.theme.typography.fontSizes.lg};
   font-weight: ${props => props.theme.typography.fontWeights.semibold};
+  opacity: ${props => (props.$isLoading ? 0.7 : 1)};
 
   &:hover {
-    background-color: ${props => props.theme.colors.secondaryLight};
+    background-color: ${props =>
+      props.$isLoading
+        ? props.theme.colors.background
+        : props.theme.colors.secondaryLight};
     color: ${props => props.theme.colors.textBlack};
   }
 `;
@@ -93,7 +98,7 @@ export default function PostActions({ post }: PostActionsProps) {
           console.log('컨트랙트 콜을 위한 데이터:', response);
           if (!response.success) {
             alert(response.error?.message || '오류가 발생했습니다.');
-            setTxLoading(false); // 에러 시 로딩 상태 비활성화
+            setTxLoading(false);
             return;
           }
 
@@ -123,10 +128,10 @@ export default function PostActions({ post }: PostActionsProps) {
             console.log('newAmount', newAmount);
             console.log('optimistic update end');
 
-            setTxLoading(false); // 트랜잭션 완료 시 로딩 상태 비활성화
+            setTxLoading(false);
           } catch (error: any) {
             console.dir(error);
-            // alert(error.shortMessage); TODO: 임시
+            alert(error.shortMessage);
             setTxLoading(false); // 에러 시 로딩 상태 비활성화
             return;
           }
@@ -153,12 +158,12 @@ export default function PostActions({ post }: PostActionsProps) {
               }
             } catch (error: any) {
               console.dir(error);
-              // alert(error.shortMessage); TODO: 임시
+              alert(error.shortMessage);
             }
           }, 10000);
         },
         onError: () => {
-          setTxLoading(false); // 에러 시 로딩 상태 비활성화
+          setTxLoading(false);
         },
       }
     );
@@ -179,28 +184,34 @@ export default function PostActions({ post }: PostActionsProps) {
   };
 
   return (
-    <>
-      {txLoading && <FullPageLoading message={'트랜잭션 처리 중...'} />}
-      <PostActionsContainer>
-        <ActionButtons>
-          <ActionButton
-            onClick={handleLike}
-            $isActive={localIsLiked}
-            $variant="like"
-          >
-            <Image src={ICONS.GOOD} alt="좋아요" />
-            <ButtonCount>{localLikeCount}</ButtonCount>
-          </ActionButton>
-          <ActionButton
-            onClick={handleDislike}
-            $isActive={localIsHated}
-            $variant="dislike"
-          >
-            <Image src={ICONS.HATE} alt="싫어요" />
-            <ButtonCount>{localHateCount}</ButtonCount>
-          </ActionButton>
-        </ActionButtons>
-      </PostActionsContainer>
-    </>
+    <PostActionsContainer>
+      <ActionButtons>
+        <ActionButton
+          onClick={handleLike}
+          $isActive={localIsLiked}
+          $variant="like"
+          $isLoading={txLoading}
+          disabled={txLoading}
+        >
+          {txLoading ? (
+            <LoadingDots isLoading={txLoading} />
+          ) : (
+            <>
+              <Image src={ICONS.GOOD} alt="좋아요" />
+              <ButtonCount>{localLikeCount}</ButtonCount>
+            </>
+          )}
+        </ActionButton>
+        <ActionButton
+          onClick={handleDislike}
+          $isActive={localIsHated}
+          $variant="dislike"
+          disabled={txLoading}
+        >
+          <Image src={ICONS.HATE} alt="싫어요" />
+          <ButtonCount>{localHateCount}</ButtonCount>
+        </ActionButton>
+      </ActionButtons>
+    </PostActionsContainer>
   );
 }

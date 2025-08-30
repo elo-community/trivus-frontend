@@ -1,17 +1,24 @@
 'use client';
 
 import styled from 'styled-components';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MyPost } from '@/api/useUser';
 import HtmlContent from '../../../components/inputs/HtmlContent';
 import NoData from '@/components/views/NoData';
 import { formatDate } from '@/utils';
+import { useWepin } from '@/contexts/WepinContext';
+import { useClaimByLikeSignature } from '@/api/usePrevContract';
+import { useAuthStore } from '@/stores/authStore';
+import { useUserTokensApi } from '@/api/useUser';
+import { DEFAULT_NETWORK } from '@/constants/networks';
+import LoadingDots from '@/components/views/LoadingDots';
+import Image from 'next/image';
+import { ICONS } from '@/assets';
 
 interface ProfilePostListProps {
   posts: MyPost[];
   isMyProfile: boolean;
-  onHarvest?: (postId: number) => void;
 }
 
 const PostListContainer = styled.div`
@@ -134,6 +141,8 @@ const LikeButton = styled.button`
   background-color: ${props => props.theme.colors.background};
   border: 1px solid ${props => props.theme.colors.border};
   border-radius: ${props => props.theme.borderRadius.sm};
+  min-height: 34px;
+  min-width: 52px;
   padding: 4px 8px;
   font-size: ${props => props.theme.typography.fontSizes.xs};
   font-weight: ${props => props.theme.typography.fontWeights.medium};
@@ -143,6 +152,9 @@ const LikeButton = styled.button`
   display: flex;
   align-items: center;
   gap: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
   &:hover {
     background-color: ${props => props.theme.colors.primaryLight};
@@ -171,9 +183,97 @@ const getLabelByType = (type: string) => {
 export default function ProfilePostList({
   posts,
   isMyProfile,
-  onHarvest,
 }: ProfilePostListProps) {
+  const [txLoading, setTxLoading] = useState<number | null>(null); // postId를 저장
   const router = useRouter();
+  const { executeContract } = useWepin();
+  const claimByLikeSignature = useClaimByLikeSignature();
+  const { userProfile, setTokenAmount, setAvailableToken } = useAuthStore();
+  const { refetch: refetchUserTokens } = useUserTokensApi(userProfile?.id || 0);
+
+  const handleHarvest = async (postId: number) => {
+    if (Number(userProfile.tokenAmount) < 1) {
+      alert('토큰이 부족합니다.');
+      return;
+    }
+
+    if (txLoading === postId) return;
+
+    setTxLoading(postId);
+
+    // 1. 컨트랙트 콜 전 필요한 데이터 받아오기
+    claimByLikeSignature.mutate(
+      { postId: postId, userAddress: userProfile.walletAddress },
+      {
+        onSuccess: async response => {
+          console.log('Claim by like signature response:', response);
+
+          try {
+            const { parseUnits } = await import('ethers');
+            const amount = parseUnits(response.data.amount, 18);
+
+            const tx = await executeContract(
+              DEFAULT_NETWORK,
+              response.data.contractAddress,
+              response.data.contractABI,
+              'claimWithSignature',
+              [
+                response.data.postId,
+                response.data.to,
+                amount.toString(),
+                response.data.deadline,
+                response.data.nonce,
+                response.data.signature,
+              ]
+            );
+            console.log('Individual harvest contract success:', tx);
+
+            // 옵티미스틱 업데이트: 즉시 토큰 증가
+            if (userProfile.tokenAmount) {
+              const currentAmount = parseFloat(userProfile.tokenAmount);
+              const claimAmount = parseFloat(response.data.amount);
+              const newAmount = (currentAmount + claimAmount).toFixed(8);
+              setTokenAmount(newAmount);
+              console.log('Optimistic update for individual harvest:', {
+                currentAmount,
+                claimAmount,
+                newAmount,
+              });
+            }
+            setTxLoading(null);
+          } catch (error: any) {
+            console.dir(error);
+            setTxLoading(null);
+            return;
+          }
+
+          // 10초 후 실제 값으로 교체
+          setTimeout(async () => {
+            if (userProfile?.id) {
+              try {
+                const result = await refetchUserTokens();
+
+                if (result.data?.data?.totalTokens) {
+                  const actualAmount = result.data.data.totalTokens;
+                  const availableAmount = result.data.data.availableTokens;
+                  setTokenAmount(actualAmount);
+                  setAvailableToken(availableAmount);
+                }
+              } catch (err: any) {
+                console.dir(err);
+                alert(err.shortMessage);
+              }
+            }
+          }, 10000);
+        },
+        onError: err => {
+          console.dir(err);
+          alert('수확 가능한 토큰이 없습니다.');
+          setTxLoading(null);
+        },
+      }
+    );
+  };
 
   // 정렬된 게시글 목록: 수확 가능한 것들을 위로, 그 다음 시간순
   const sortedPosts = useMemo(() => {
@@ -228,10 +328,16 @@ export default function ProfilePostList({
                 <LikeButton
                   onClick={e => {
                     e.stopPropagation();
-                    onHarvest?.(post.id);
+                    handleHarvest(post.id);
                   }}
                 >
-                  ❤️ {post.likeCount}
+                  {txLoading === post.id ? (
+                    <LoadingDots isLoading={true} />
+                  ) : (
+                    <>
+                      <Image src={ICONS.GOOD} alt="heart" /> {post.likeCount}
+                    </>
+                  )}
                 </LikeButton>
               </div>
             )}

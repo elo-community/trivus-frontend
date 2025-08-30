@@ -16,12 +16,8 @@ import {
   useUserTokensApi,
 } from '@/api/useUser';
 import GameStatsGrid from '../components/GameStatsGrid';
-import {
-  useClaimAllAccumulatedTokens,
-  useClaimByLikeSignature,
-} from '@/api/usePrevContract';
+import { useClaimAllAccumulatedTokens } from '@/api/usePrevContract';
 import { useWepin } from '@/contexts/WepinContext';
-import FullPageLoading from '@/components/layout/FullPageLoading';
 import { useModal } from '@/hooks/useModal';
 
 const Container = styled.div`
@@ -70,13 +66,11 @@ const ProfileRightCol = styled.div`
 
 export default function ProfilePage() {
   const [posts, setPosts] = useState<MyPost[]>([]);
-  const [harvestableTokens, setHarvestableTokens] = useState(0);
   const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
   const [txLoading, setTxLoading] = useState(false);
   const firstPostGuideModal = useModal();
 
   const claimAllAccumulatedTokens = useClaimAllAccumulatedTokens();
-  const claimByLikeSignature = useClaimByLikeSignature();
 
   const { data: profileData, isLoading } = useProfileApi();
   const {
@@ -93,20 +87,15 @@ export default function ProfilePage() {
   const { refetch: refetchUserTokens } = useUserTokensApi(userProfile?.id || 0);
   const { executeContract } = useWepin();
 
-  const handleHarvest = (postId: number) => {
-    // useClaimByLikeSignature API 호출
-    claimByLikeSignature.mutate(
-      {
-        postId: postId,
-        userAddress: userProfile.walletAddress,
-      },
+  const handleHarvestAll = () => {
+    claimAllAccumulatedTokens.mutate(
+      { address: userProfile.walletAddress },
       {
         onSuccess: async response => {
-          console.log('Claim by like signature response:', response);
-
+          console.log(response);
+          const { parseUnits } = await import('ethers');
+          const amount = parseUnits(response.data.amount, 18);
           try {
-            const { parseUnits } = await import('ethers');
-            const amount = parseUnits(response.data.amount, 18);
             setTxLoading(true); // 트랜잭션 시작 시 로딩 상태 활성화
 
             const tx = await executeContract(
@@ -115,15 +104,15 @@ export default function ProfilePage() {
               response.data.contractABI,
               'claimWithSignature',
               [
-                response.data.postId,
                 response.data.to,
-                amount.toString(),
+                amount,
                 response.data.deadline,
                 response.data.nonce,
                 response.data.signature,
               ]
             );
-            console.log('Individual harvest contract success:', tx);
+
+            console.log('claim all contract success:', tx);
 
             // 옵티미스틱 업데이트: 즉시 토큰 증가
             if (userProfile.tokenAmount) {
@@ -131,16 +120,17 @@ export default function ProfilePage() {
               const claimAmount = parseFloat(response.data.amount);
               const newAmount = (currentAmount + claimAmount).toFixed(8);
               setTokenAmount(newAmount);
-              console.log('Optimistic update for individual harvest:', {
+              console.log(
+                'Optimistic update for claim all:',
                 currentAmount,
                 claimAmount,
-                newAmount,
-              });
+                newAmount
+              );
             }
             setTxLoading(false); // 트랜잭션 완료 시 로딩 상태 비활성화
           } catch (error: any) {
             console.dir(error);
-            // alert(error.shortMessage); TODO: 임시
+            alert(error.shortMessage);
             setTxLoading(false); // 에러 시 로딩 상태 비활성화
             return;
           }
@@ -167,81 +157,6 @@ export default function ProfilePage() {
         onError: err => {
           console.dir(err);
           alert('수확 가능한 토큰이 없습니다.');
-          setTxLoading(false); // 에러 시 로딩 상태 비활성화
-        },
-      }
-    );
-  };
-
-  const handleHarvestAll = () => {
-    claimAllAccumulatedTokens.mutate(
-      { address: userProfile.walletAddress },
-      {
-        onSuccess: async response => {
-          console.log(response);
-          const { parseUnits } = await import('ethers');
-          const amount = parseUnits(response.data.amount, 18);
-          try {
-            setTxLoading(true); // 트랜잭션 시작 시 로딩 상태 활성화
-
-            const tx = await executeContract(
-              DEFAULT_NETWORK,
-              response.data.contractAddress,
-              response.data.contractABI,
-              'claimWithSignature',
-              [
-                response.data.to,
-                amount,
-                response.data.deadline,
-                response.data.nonce,
-                response.data.signature,
-              ]
-            );
-            console.log('success tx', tx);
-
-            // 옵티미스틱 업데이트: 즉시 토큰 증가
-            if (userProfile.tokenAmount) {
-              const currentAmount = parseFloat(userProfile.tokenAmount);
-              const newAmount =
-                currentAmount + (Number(profileData?.user.availableToken) || 0);
-
-              setTokenAmount(String(newAmount));
-              setAvailableToken('0'); // availableToken을 0으로 리셋
-              setHarvestableTokens(0); // 수확 가능한 토큰 리셋
-              console.log('Optimistic update:', {
-                currentAmount,
-                harvestableTokens,
-                newAmount,
-              });
-            }
-            setTxLoading(false); // 트랜잭션 완료 시 로딩 상태 비활성화
-          } catch (error: any) {
-            console.dir(error);
-            // alert(error.shortMessage); TODO: 임시
-            setTxLoading(false); // 에러 시 로딩 상태 비활성화
-            return;
-          }
-
-          // 10초 후 실제 값으로 교체
-          setTimeout(async () => {
-            if (userProfile?.id) {
-              try {
-                const result = await refetchUserTokens();
-                if (result.data?.data?.totalTokens) {
-                  const actualAmount = result.data.data.totalTokens;
-                  const availableAmount = result.data.data.availableTokens;
-                  setTokenAmount(actualAmount);
-                  setAvailableToken(availableAmount);
-                  console.log('Replaced with actual value:', actualAmount);
-                }
-              } catch (error: any) {
-                console.dir(error);
-                // alert(error.shortMessage); TODO: 임시
-              }
-            }
-          }, 10000);
-        },
-        onError: () => {
           setTxLoading(false); // 에러 시 로딩 상태 비활성화
         },
       }
@@ -290,11 +205,8 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myPostsData, isLoading]);
 
-  if (isLoading) return <FullPageLoading />;
-
   return (
     <>
-      {txLoading && <FullPageLoading message="트랜잭션 진행중..." />}
       <Container>
         <Content>
           <ProfileTopWrapper>
@@ -312,17 +224,14 @@ export default function ProfilePage() {
                 harvestableTokens={Number(userProfile.availableToken) ?? 0}
                 onHarvestAll={handleHarvestAll}
                 harvestButtonText="수확하기"
+                isHarvesting={txLoading}
               />
             </ProfileRightCol>
           </ProfileTopWrapper>
 
           <GameStatsGrid userElos={userElos} />
 
-          <ProfilePostList
-            posts={posts}
-            isMyProfile={true}
-            onHarvest={handleHarvest}
-          />
+          <ProfilePostList posts={posts} isMyProfile={true} />
         </Content>
 
         <NicknameChangeModal
