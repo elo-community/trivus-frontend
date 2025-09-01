@@ -7,7 +7,7 @@ import { ModalOverlay } from './style';
 const ModalContainer = styled.div`
   background: white;
   border-radius: 12px;
-  padding: 24px 24px 0 24px;
+  padding: 24px;
   max-width: 400px;
   width: 90%;
   max-height: 80vh;
