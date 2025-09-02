@@ -1,4 +1,7 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 interface HtmlContentProps {
   content: string;
@@ -6,15 +9,11 @@ interface HtmlContentProps {
 }
 
 export default function HtmlContent({ content, className }: HtmlContentProps) {
-  // HTML 태그를 안전하게 처리
-  const sanitizedContent = content
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
-
   return (
-    <div
-      className={className}
-      dangerouslySetInnerHTML={{ __html: sanitizedContent }}
-    />
+    <div className={className}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 }
