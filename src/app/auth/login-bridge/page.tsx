@@ -34,7 +34,7 @@ export default function LoginBridgePage() {
   return (
     <Container>
       <LoginCard>
-        <Title>로그인 브리지</Title>
+        <Title>로그인 브리지-app</Title>
       </LoginCard>
     </Container>
   );
