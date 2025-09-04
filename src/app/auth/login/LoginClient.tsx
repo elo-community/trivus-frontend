@@ -21,7 +21,10 @@ const LoginContainer = styled.div`
   background-color: white;
   max-width: 768px;
   margin: 0 auto;
-  padding: 10vh 12vw 8vh;
+  padding-left: min(12vw, 130px);
+  padding-right: min(12vw, 130px);
+  padding-top: 10vh;
+  padding-bottom: 8vh;
   background: linear-gradient(to bottom, #ffffff, #f5fffb);
 
   img {

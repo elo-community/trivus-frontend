@@ -4,6 +4,7 @@ import HtmlContent from '@/components/inputs/HtmlContent';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes';
 import { StoredHotPost } from '@/types/post';
+import { formatDate } from '@/utils';
 
 interface PopularPostsProps {
   posts: StoredHotPost[];
@@ -113,7 +114,7 @@ const PopularPosts: React.FC<PopularPostsProps> = ({ posts }) => {
             <PostFooter>
               <AuthorName>{authorName}</AuthorName>
               <span>•</span>
-              <PostDate>{createdAt}</PostDate>
+              <PostDate>{formatDate(createdAt)}</PostDate>
               <span>•</span>
               <ViewCount>조회 {views}</ViewCount>
             </PostFooter>
