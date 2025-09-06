@@ -34,7 +34,8 @@ export default function LoginBridgePage() {
   return (
     <Container>
       <LoginCard>
-        <Title>로그인 브리지-app</Title>
+        <Title>로그인 브리지</Title>
+        <Title>AuthCode 받은이후 로그인 처리이후 ELO페이지로 이동</Title>
       </LoginCard>
     </Container>
   );
