@@ -7,6 +7,7 @@ import React, { useEffect } from 'react';
 import styled from 'styled-components';
 
 const Container = styled.div`
+  height: 100vh;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -14,6 +15,8 @@ const Container = styled.div`
   justify-content: center;
   background-color: #f8f9fa;
   padding: 20px;
+  overflow: hidden;
+  box-sizing: border-box;
 `;
 
 const LoginCard = styled.div`
