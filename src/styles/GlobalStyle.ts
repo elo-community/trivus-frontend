@@ -18,8 +18,7 @@ const GlobalStyle = createGlobalStyle`
   html,
   body {
     height: 100vh;
-    min-height: 100vh;
-    overflow: hidden; /* 웹뷰에서 스크롤 방지 */
+    overflow: hidden; /* 전체 페이지 스크롤 방지 (웹뷰용) */
   }
 
   body {

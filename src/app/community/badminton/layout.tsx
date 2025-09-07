@@ -6,7 +6,7 @@ import WriteButton from '@/components/buttons/WriteButton';
 import { ROUTES } from '@/constants/routes';
 
 const LayoutContainer = styled.div`
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
 
@@ -18,6 +18,7 @@ const LayoutContainer = styled.div`
 `;
 const ContentWrapper = styled.div`
   flex: 1;
+  overflow-y: auto; /* 콘텐츠 영역만 스크롤 */
   padding-bottom: 80px; /* BottomNavigation 높이만큼 패딩 */
 `;
 
