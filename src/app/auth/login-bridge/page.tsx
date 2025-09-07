@@ -1,5 +1,8 @@
 'use client';
 
+import { ROUTES } from '@/constants/routes';
+import { useAuthStore } from '@/stores/authStore';
+import { useRouter } from 'next/navigation';
 import React, { useEffect } from 'react';
 import styled from 'styled-components';
 
@@ -44,15 +47,27 @@ interface FlutterAuthMessage {
 }
 
 export default function LoginBridgePage() {
+  const { setProfile, setIsLoggedIn } = useAuthStore();
+  const router = useRouter();
+
   useEffect(() => {
     const handleMessage = (event: MessageEvent<FlutterAuthMessage>) => {
       console.log('Received message:', event.data);
 
       if (event.data.type === 'AUTH_TOKEN') {
-        // 일단 받은 토큰을 alert로 확인
         alert(
           `토큰 받음: ${event.data.token}\n이메일: ${event.data.userEmail}\n이름: ${event.data.userName}`
         );
+        localStorage.setItem('ACCESS_TOKEN', event.data.token);
+
+        // userStore에 사용자 정보 저장
+        setProfile({
+          email: event.data.userEmail,
+          nickname: event.data.userName,
+        });
+        setIsLoggedIn(true);
+
+        router.push(ROUTES.elo.root);
       }
     };
 

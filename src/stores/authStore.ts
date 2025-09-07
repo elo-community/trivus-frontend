@@ -9,7 +9,7 @@ interface AuthState {
 }
 
 interface AuthActions {
-  setProfile: (profile: User) => void;
+  setProfile: (profile: Partial<User>) => void;
   setUserElos: (userElos: UserElo[]) => void;
   setIsLoggedIn: (isLoggedIn: boolean) => void;
   setIsLoading: (isLoading: boolean) => void;
@@ -38,10 +38,13 @@ export const useAuthStore = create<AuthStore>(set => ({
     walletAddress: '',
   },
   // Actions
-  setProfile: (profile: User) =>
+  setProfile: (profile: Partial<User>) =>
     set(state => ({
       ...state,
-      userProfile: profile,
+      userProfile: {
+        ...state.userProfile,
+        ...profile,
+      },
     })),
   setUserElos: (userElos: UserElo[]) =>
     set(state => ({
